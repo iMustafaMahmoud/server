@@ -11,7 +11,6 @@ const placeOrder = async (req, res) => {
     await newOrder.save();
     res.status(200).send(newOrder);
   } catch (error) {
-    console.log(error);
     return new HttpError("Invalid input passed, please check your data.", 422);
   }
 };
@@ -36,7 +35,6 @@ const getOrderDetails = async (req, res) => {
   let order;
   try {
     orderId = req.params.id;
-    console.log(req.params);
     order = await Order.findById(orderId);
     res.send(order);
   } catch (error) {
