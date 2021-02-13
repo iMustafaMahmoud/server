@@ -7,7 +7,6 @@ const Order = require("../models/Order");
 const placeOrder = async (req, res) => {
   try {
     let newOrder = new Order(req.body);
-    console.log(newOrder);
     await newOrder.save();
     res.status(200).send(newOrder);
   } catch (error) {
