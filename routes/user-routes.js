@@ -9,6 +9,8 @@ const router = express.Router();
 
 router.get("/", userController.getUsers);
 
+router.get("/:uid", userController.getUserById);
+
 router.post(
   "/signup",
   [
@@ -24,5 +26,17 @@ router.post(
 );
 
 router.post("/login", userController.login);
+
+router.patch(
+  "/:uid",
+  check("name").not().isEmpty(),
+  check("email")
+    .normalizeEmail() //Test@test.com => test@test.com
+    .isEmail(),
+  check("password").isLength({ min: 6 }),
+  userController.updateUser
+);
+
+router.delete("/:uid", userController.deleteUser);
 
 module.exports = router;
