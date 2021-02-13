@@ -5,9 +5,11 @@ const fs = require("fs");
 const path = require("path");
 
 const userRoutes = require("./routes/user-routes");
+const orderRoutes = require("./routes/order-routes");
 const HttpError = require("./models/http-error");
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
 app.use(bodyParser.json());
 
@@ -15,18 +17,15 @@ app.use("/uploads/images", express.static(path.join("uploads", "images")));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
+  res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE");
   next();
 });
 
 app.use("/users", userRoutes);
+app.use("/orders", orderRoutes);
 
 app.use((req, res, next) => {
-  console.log("Hereeeeee");
   const error = new HttpError("Could not find this route.", 404);
   throw error;
 });
@@ -47,11 +46,20 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect(
-    "mongodb+srv://mustafa:passwordd@cluster0.lzaby.mongodb.net/<dbname>?retryWrites=true&w=majority",
-    { useNewUrlParser: true, useUnifiedTopology: true }
-  )
-  .then(() => app.listen(process.env.PORT || 5000))
+  .connect("mongodb://localhost:27017/cratena", { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => app.listen(PORT))
   .catch((err) => {
     console.log(err);
   });
+
+// mongoose
+//   .connect(
+//     "mongodb+srv://mustafa:passwordd@cluster0.lzaby.mongodb.net/<dbname>?retryWrites=true&w=majority",
+//     { useNewUrlParser: true, useUnifiedTopology: true }
+//   )
+//   .then(() => app.listen(PORT))
+//   .catch((err) => {
+//     console.log(err);
+//   });
+
+console.log("Server is running on port", PORT);
