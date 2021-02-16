@@ -7,7 +7,7 @@ const orderSchema = new Schema(
     customerId: { type: String, required: true, ref: "User" },
     items: [
       {
-        product_id: { type: mongoose.Types.ObjectId },
+        product_id: { type: String },
         unit_price: { type: Number },
         quantity: { type: Number },
       },

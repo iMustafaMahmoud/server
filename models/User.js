@@ -11,6 +11,7 @@ const userSchema = new Schema(
     billing_address: [{ type: String, required: true }],
     age: { type: String, required: true },
     gender: { type: String, required: true },
+    orders: [{ type: mongoose.Types.ObjectId, required: true, ref: "Order" }],
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );

@@ -1,81 +1,175 @@
+const mongoose = require("mongoose");
 const HttpError = require("../models/http-error");
 const { validationResult } = require("express-validator");
 const Order = require("../models/Order");
+const User = require("../models/User");
 
 // METHOD: POST
 // REQUEST: Order object
-const placeOrder = async (req, res) => {
-  try {
-    let newOrder = new Order(req.body);
-    await newOrder.save();
-    res.status(200).send(newOrder);
-  } catch (error) {
-    return new HttpError("Invalid input passed, please check your data.", 422);
+const placeOrder = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log(errors);
+    throw new HttpError("Invalid inputs passed, please check your data.", 422);
   }
+
+  const { items, promo_code, total_amount, comments, uid } = req.body;
+  const createdOrder = new Order({
+    customerId: uid,
+    items,
+    status: "Placed",
+    placement_date: Date.now(),
+    delivery_date: "none",
+    promo_code,
+    total_amount,
+    comments,
+  });
+
+  var id = mongoose.Types.ObjectId(uid);
+
+  let user;
+  try {
+    user = await User.findById(id);
+  } catch (err) {
+    console.log("user problem");
+    const error = new HttpError("Creating order failed, please try again", 500);
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError(
+      "We could not find user for the provided id",
+      404
+    );
+    return next(error);
+  }
+
+  console.log(user);
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await createdOrder.save({ session: sess }); //make the unique id here
+    user.orders.push(createdOrder);
+    await user.save({ session: sess });
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError(
+      "Creating order failed, please try again.",
+      500
+    );
+    return next(error);
+  }
+
+  res.status(201).send(createdOrder);
 };
 
 // METHOD: GET
 // RESPONSE: All orders
-const getOrders = async (req, res) => {
-  let orders;
+const getOrderById = async (req, res) => {
+  const orderId = req.params.oid;
+
+  let order;
   try {
-    orders = await Order.find();
-    res.send(orders);
-  } catch (error) {
-    return new HttpError("Fetching orders failed, please try again later.", 500);
+    order = await Order.findById(orderId);
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not find this order.",
+      500
+    );
+    return next(error);
   }
+
+  if (!order) {
+    const error = new HttpError(
+      "Could not find an order for the provided id.",
+      404
+    );
+    return next(error);
+  }
+
+  res.json({ order: order.toObject({ getters: true }) });
 };
 
 // METHOD: GET
 // REQUEST: Order ID
 // RESPONSE: Selected order by ID
-const getOrderDetails = async (req, res) => {
-  let orderId;
-  let order;
+const getOrderByUserEmail = async (req, res) => {
+  const email = req.params.email;
+
+  let userWithOrders;
   try {
-    orderId = req.params.id;
-    order = await Order.findById(orderId);
-    res.send(order);
-  } catch (error) {
-    return new HttpError("Fetching order failed, please try again later.", 500);
+    userWithOrders = await User.findOne({ email }).populate("orders");
+  } catch (err) {
+    const error = new HttpError(
+      "Fetching orders failed, please try again later",
+      500
+    );
+    return next(error);
   }
+
+  if (!userWithOrders || userWithOrders.orders.length === 0) {
+    return next(
+      new HttpError("Could not find an order for the provided user id.", 404)
+    );
+  }
+
+  res.send({
+    orders: userWithOrders.orders.map((order) =>
+      order.toObject({ getters: true })
+    ),
+  });
 };
 
 // METHOD: PATCH
 // REQUEST: Order adjustemnts
 // RESPONSE: New order's object
-const editOrder = async (req, res) => {
-  let orderId;
-  let order;
-  let newOrder;
-  try {
-    orderId = req.params.id;
-    order = await Order.findById(orderId);
-    newOrder = req.body;
-    // TODO: Edit order and save it
-
-    res.send(newOrder);
-  } catch (error) {
-    return new HttpError("Fetching order failed, please try again later.", 500);
-  }
-};
 
 // METHOD: DELETE
 // REQUEST: Order ID
 const deleteOrder = async (req, res) => {
-  let orderId;
+  const orderId = req.params.oid;
+
   let order;
   try {
-    orderId = req.params.id;
-    order = await Order.findByIdAndDelete(orderId);
-    res.send();
-  } catch (error) {
-    return new HttpError("Error deleting order", 500);
+    order = await Order.findById(orderId).populate("customerId");
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not delete order.",
+      500
+    );
+    return next(error);
   }
+
+  if (!order) {
+    const error = new HttpError("Could not find order for this id. ", 404);
+    return next(error);
+  }
+
+  if (order.customerId.id.toString() !== req.userData.userId) {
+    const error = new HttpError("You are allowed to delete this order.", 401);
+    return next(error);
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await order.remove({ session: sess });
+    order.customerId.orders.pull(order);
+    await order.customerId.save({ session: sess });
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError(
+      "Something went wrong, could not delete order.",
+      500
+    );
+    return next(error);
+  }
+  res.status(200).json({ message: "Order Canceled." });
 };
 
 exports.placeOrder = placeOrder;
-exports.getOrders = getOrders;
-exports.getOrderDetails = getOrderDetails;
-exports.editOrder = editOrder;
+exports.getOrderById = getOrderById;
+exports.getOrderByUserEmail = getOrderByUserEmail;
+//exports.editOrder = editOrder;
 exports.deleteOrder = deleteOrder;

@@ -45,21 +45,21 @@ app.use((error, req, res, next) => {
   res.json({ message: error.message || "An unknown error occurred" });
 });
 
-mongoose
-  .connect("mongodb://localhost:27017/cratena", { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => app.listen(PORT))
-  .catch((err) => {
-    console.log(err);
-  });
-
 // mongoose
-//   .connect(
-//     "mongodb+srv://mustafa:passwordd@cluster0.lzaby.mongodb.net/<dbname>?retryWrites=true&w=majority",
-//     { useNewUrlParser: true, useUnifiedTopology: true }
-//   )
+//   .connect("mongodb://localhost:27017/cratena", { useNewUrlParser: true, useUnifiedTopology: true })
 //   .then(() => app.listen(PORT))
 //   .catch((err) => {
 //     console.log(err);
 //   });
+
+mongoose
+  .connect(
+    "mongodb+srv://mustafa:passwordd@cluster0.lzaby.mongodb.net/<dbname>?retryWrites=true&w=majority",
+    { useNewUrlParser: true, useUnifiedTopology: true }
+  )
+  .then(() => app.listen(PORT))
+  .catch((err) => {
+    console.log(err);
+  });
 
 console.log("Server is running on port", PORT);

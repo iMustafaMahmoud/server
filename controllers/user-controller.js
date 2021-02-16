@@ -53,7 +53,7 @@ const signup = async (req, res, next) => {
     );
   }
 
-  const { name, email, password, address, age, gender } = req.body;
+  const { name, email, password, billing_address, age, gender } = req.body;
 
   let existingUser;
   try {
@@ -89,8 +89,8 @@ const signup = async (req, res, next) => {
     name,
     email,
     password: hashedPassword,
-    places: [],
-    address: [address],
+    orders: [],
+    billing_address: [billing_address],
     age,
     gender,
   });
