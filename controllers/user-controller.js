@@ -45,7 +45,7 @@ const getUserById = async (req, res, next) => {
 };
 
 const signup = async (req, res, next) => {
-  const errors = validationResult(req);
+  const errors = validationResult(req.body);
   if (!errors.isEmpty()) {
     console.log(errors);
     return next(
@@ -53,7 +53,17 @@ const signup = async (req, res, next) => {
     );
   }
 
-  const { name, email, password, billing_address, age, gender } = req.body;
+  console.log(req.body);
+
+  const {
+    first_name,
+    last_name,
+    email,
+    password,
+    confirm_password,
+    date_of_birth,
+    gender,
+  } = req.body;
 
   let existingUser;
   try {
@@ -74,24 +84,33 @@ const signup = async (req, res, next) => {
     return next(error);
   }
 
+  if (password !== confirm_password) {
+    const error = new HttpError(
+      "Password is not the same as confirmed Password",
+      400
+    );
+    return next(error);
+  }
+
   let hashedPassword;
   try {
+    console.log(password);
     hashedPassword = await bcrypt.hash(password, 12);
   } catch (err) {
     const error = new HttpError(
-      "Could not create user, please try again.",
+      "Could not create user, please try again. hereee",
       500
     );
     return next(error);
   }
 
   const createdUser = new User({
-    name,
+    first_name,
+    last_name,
     email,
     password: hashedPassword,
+    date_of_birth,
     orders: [],
-    billing_address: [billing_address],
-    age,
     gender,
   });
 

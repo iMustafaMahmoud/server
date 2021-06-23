@@ -4,8 +4,6 @@ const { validationResult } = require("express-validator");
 const Order = require("../models/Order");
 const User = require("../models/User");
 
-// METHOD: POST
-// REQUEST: Order object
 const placeOrder = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -14,8 +12,11 @@ const placeOrder = async (req, res, next) => {
   }
 
   const { items, promo_code, total_amount, comments, uid } = req.body;
+
+  var id = mongoose.Types.ObjectId(uid);
+
   const createdOrder = new Order({
-    customerId: uid,
+    customerId: id,
     items,
     status: "Placed",
     placement_date: Date.now(),
@@ -24,8 +25,6 @@ const placeOrder = async (req, res, next) => {
     total_amount,
     comments,
   });
-
-  var id = mongoose.Types.ObjectId(uid);
 
   let user;
   try {
@@ -64,8 +63,6 @@ const placeOrder = async (req, res, next) => {
   res.status(201).send(createdOrder);
 };
 
-// METHOD: GET
-// RESPONSE: All orders
 const getOrderById = async (req, res) => {
   const orderId = req.params.oid;
 
@@ -91,9 +88,6 @@ const getOrderById = async (req, res) => {
   res.json({ order: order.toObject({ getters: true }) });
 };
 
-// METHOD: GET
-// REQUEST: Order ID
-// RESPONSE: Selected order by ID
 const getOrderByUserEmail = async (req, res) => {
   const email = req.params.email;
 
@@ -121,12 +115,6 @@ const getOrderByUserEmail = async (req, res) => {
   });
 };
 
-// METHOD: PATCH
-// REQUEST: Order adjustemnts
-// RESPONSE: New order's object
-
-// METHOD: DELETE
-// REQUEST: Order ID
 const deleteOrder = async (req, res) => {
   const orderId = req.params.oid;
 
@@ -171,5 +159,4 @@ const deleteOrder = async (req, res) => {
 exports.placeOrder = placeOrder;
 exports.getOrderById = getOrderById;
 exports.getOrderByUserEmail = getOrderByUserEmail;
-//exports.editOrder = editOrder;
 exports.deleteOrder = deleteOrder;
